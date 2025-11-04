@@ -35,18 +35,49 @@
   <div style="display:flex;gap:14px;align-items:center">
     <div style="width:72px;height:48px;border-radius:8px;background:#111;display:flex;align-items:center;justify-content:center" id="logoBox">LOGO</div>
     <div>
-      <h1 id="siteName" style="text-align:center; font-size:3rem; margin-top:20px;">Pranar Daak Band</h1>
-      <h2 class="muted" id="siteDesc">All in one</h2>
-    </div>
-  </div>
-  <nav>
-    <button onclick="show('home')">Home</button>
-    <button onclick="show('book')">Book</button>
-    <button onclick="show('gallery')">Photos/Videos</button>
-    <button onclick="show('memberLogin')">Member Login</button>
-    <button onclick="show('adminLogin')">Owner Login</button>
+      <!-- Header Section -->
+<header style="text-align:center; margin-top:30px;">
+  <h1 style="font-size:3.5rem; font-weight:bold; margin-bottom:30px;">Pranar Daak Band (প্রানের ডাক)</h1>
+
+  <!-- Navigation Menu -->
+  <nav class="menu" style="display:flex; flex-wrap:wrap; justify-content:center; gap:15px;">
+    <a href="#" class="nav-btn">Home</a>
+    <a href="#" class="nav-btn">Book</a>
+    <a href="#" class="nav-btn">Photos/Videos</a>
+    <a href="#" class="nav-btn">Member Login</a>
+    <a href="#" class="nav-btn">Owner Login</a>
   </nav>
 </header>
+
+<!-- Button Style -->
+<style>
+  .nav-btn {
+    background-color: #222;
+    color: white;
+    padding: 10px 20px;
+    border-radius: 8px;
+    text-decoration: none;
+    font-size: 1rem;
+    transition: 0.3s;
+  }
+  .nav-btn:hover {
+    background-color: #444;
+    transform: scale(1.05);
+  }
+
+  /* Mobile-friendly layout */
+  @media (max-width: 600px) {
+    .menu {
+      flex-direction: column;
+      align-items: center;
+    }
+    .nav-btn {
+      width: 80%;
+      text-align: center;
+    }
+  }
+</style>
+  </nav>
 
 <main>
   <div id="appArea"></div>
