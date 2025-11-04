@@ -1,0 +1,2 @@
+import React, {useState} from 'react';
+export default function App(){ const [name]=useState('Pranar Daak Band'); return (<div style={{background:'#000',color:'#fff',minHeight:'100vh',padding:20}}><h1>{name}</h1><p>Welcome to Pranar Daak prototype.</p></div>)}
