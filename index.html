@@ -1,1 +1,389 @@
 <!doctype html><html><head><meta charset='utf-8'><title>Pranar Daak</title></head><body><div id='root'></div></body></html>
+<!-- copy everything from here into your GitHub index.html -->
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Pranar Daak Band</title>
+<style>
+  :root{--bg:#050505;--card:#0f0f0f;--muted:#9a9a9a;--accent:#ffffff}
+  body{margin:0;font-family:Inter,system-ui,Arial;background:var(--bg);color:var(--accent)}
+  header{padding:20px;border-bottom:1px solid #111;background:linear-gradient(180deg, rgba(0,0,0,0.6), rgba(0,0,0,0.2));display:flex;align-items:center;justify-content:space-between}
+  header h1{margin:0;font-size:22px}
+  nav button{margin-left:8px;padding:8px 12px;border-radius:8px;border:1px solid #222;background:transparent;color:var(--accent);cursor:pointer}
+  main{padding:18px;max-width:1100px;margin:0 auto}
+  .grid{display:grid;grid-template-columns:1fr 360px;gap:16px}
+  .card{background:var(--card);padding:14px;border-radius:10px;border:1px solid #1a1a1a}
+  .muted{color:var(--muted);font-size:13px}
+  input,select,textarea{width:100%;padding:8px;margin-top:6px;border-radius:8px;border:1px solid #222;background:#080808;color:var(--accent)}
+  label{display:block;margin-top:8px;color:var(--muted);font-size:13px}
+  .btn{display:inline-block;padding:8px 12px;background:#fff;color:#000;border-radius:8px;border:none;cursor:pointer}
+  .small{font-size:13px;color:var(--muted)}
+  .member-card{display:flex;gap:10px;align-items:center;border-bottom:1px solid #111;padding:8px 0}
+  img.avatar{width:60px;height:60px;border-radius:8px;object-fit:cover}
+  .actions{display:flex;gap:8px}
+  footer{padding:14px;text-align:center;color:var(--muted);font-size:13px}
+  .note{background:#111;padding:8px;border-radius:6px;margin-top:8px;color:var(--muted)}
+  .danger{background:#2b0000;color:#ffb3b3;padding:6px;border-radius:6px}
+  .badge{background:#222;padding:4px 8px;border-radius:8px;color:var(--muted);font-size:12px}
+  .log{font-family:monospace;background:#0b0b0b;padding:8px;border-radius:6px;max-height:140px;overflow:auto}
+  .flex{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+</style>
+</head>
+<body>
+<header>
+  <div style="display:flex;gap:14px;align-items:center">
+    <div style="width:72px;height:48px;border-radius:8px;background:#111;display:flex;align-items:center;justify-content:center" id="logoBox">LOGO</div>
+    <div>
+      <h1 id="siteName">Pranar Daak Band</h1>
+      <div class="muted" id="siteDesc">Professional band booking</div>
+    </div>
+  </div>
+  <nav>
+    <button onclick="show('home')">Home</button>
+    <button onclick="show('book')">Book</button>
+    <button onclick="show('gallery')">Photos/Videos</button>
+    <button onclick="show('memberLogin')">Member Login</button>
+    <button onclick="show('adminLogin')">Owner Login</button>
+  </nav>
+</header>
+
+<main>
+  <div id="appArea"></div>
+</main>
+
+<footer>
+  © Pranar Daak Band — Manage via Admin panel. Admin email: <span id="adminEmail" class="muted">eisannath3926@gmail.com</span>
+</footer>
+
+<script>
+/*
+Single-file Pranar Daak prototype
+Client-side storage (localStorage).
+Admin passcode default: 3926
+*/
+
+const LS_SITE = 'pdb_site_v3', LS_MEMBERS='pdb_members_v3', LS_BOOKINGS='pdb_bookings_v3', LS_ADMIN='pdb_admin_v3', LS_GALLERY='pdb_gallery_v3';
+function uid(){return Math.random().toString(36).slice(2,9)}
+
+/* init defaults */
+function init(){
+  if(!localStorage.getItem(LS_SITE)) localStorage.setItem(LS_SITE, JSON.stringify({name:'Pranar Daak Band', description:'Professional band booking', adminEmail:'eisannath3926@gmail.com', depositDefaultOn:true, depositPercent:50}));
+  if(!localStorage.getItem(LS_MEMBERS)) localStorage.setItem(LS_MEMBERS, JSON.stringify([]));
+  if(!localStorage.getItem(LS_BOOKINGS)) localStorage.setItem(LS_BOOKINGS, JSON.stringify([]));
+  if(!localStorage.getItem(LS_ADMIN)) localStorage.setItem(LS_ADMIN, JSON.stringify({pass:'3926'}));
+  if(!localStorage.getItem(LS_GALLERY)) localStorage.setItem(LS_GALLERY, JSON.stringify([]));
+}
+init();
+
+/* helpers */
+function read(k){return JSON.parse(localStorage.getItem(k)||'null')}
+function write(k,v){localStorage.setItem(k,JSON.stringify(v))}
+function setSite(s){write(LS_SITE,s); document.getElementById('siteName').textContent = s.name; document.getElementById('siteDesc').textContent = s.description; document.getElementById('adminEmail').textContent = s.adminEmail;}
+setSite(read(LS_SITE));
+
+/* UI view switcher */
+function show(v){state.view=v; render()}
+
+/* State */
+const state = {view:'home', adminSession:false, memberSession:null}
+
+/* Render main area */
+function render(){
+  const el = document.getElementById('appArea');
+  const site = read(LS_SITE);
+  const members = read(LS_MEMBERS) || [];
+  const bookings = read(LS_BOOKINGS) || [];
+  if(state.view === 'home') {
+    el.innerHTML = `
+      <div class="grid">
+        <div>
+          <div class="card">
+            <h2>${site.name}</h2>
+            <p class="muted">${site.description}</p>
+            <div style="margin-top:12px">
+              <strong>Members</strong>
+              <div id="membersList"></div>
+            </div>
+          </div>
+          <div style="margin-top:12px" class="card">
+            <h3>Recent Bookings</h3>
+            <div id="recentBookings"></div>
+          </div>
+        </div>
+        <div>
+          <div class="card">
+            <strong>Quick actions</strong>
+            <div class="flex" style="margin-top:8px">
+              <button class="btn" onclick="show('book')">Make Booking</button>
+              <button class="btn" onclick="show('gallery')">Gallery</button>
+              <button class="btn" onclick="show('adminLogin')">Admin</button>
+            </div>
+            <div class="note" style="margin-top:12px">
+              <strong>Note / টীকা</strong><div>English: "Travel cost will be added separately after checking location." <br>বাংলা: "যাতায়াতের জন্য ফি আলাদা এবং সেটি লোকেশন দেখার পর যোগ করা হবে।"</div>
+            </div>
+          </div>
+          <div style="margin-top:12px" class="card">
+            <strong>Admin Email</strong>
+            <div class="muted" id="adminEmailBox">${site.adminEmail}</div>
+          </div>
+        </div>
+      </div>
+    `;
+    const mEl = document.getElementById('membersList');
+    if(members.length===0) mEl.innerHTML = '<div class="muted">No members yet.</div>';
+    else mEl.innerHTML = members.map(m => `
+      <div class="member-card">
+        <div><img class="avatar" src="${m.photo||''}" onerror="this.style.display='none'"></div>
+        <div style="flex:1">
+          <div style="font-weight:bold">${m.name} <span class="badge">${m.role}</span></div>
+          <div class="small">Fee: ${m.fee||0} | Code: ${m.code}</div>
+          <div class="muted small">Available dates: ${m.availableDates && m.availableDates.length? m.availableDates.join(', '): 'All'}</div>
+        </div>
+      </div>
+    `).join('');
+    const rb = document.getElementById('recentBookings');
+    if(bookings.length===0) rb.innerHTML='<div class="muted">No bookings yet.</div>';
+    else rb.innerHTML = bookings.slice(0,6).map(b=>`<div style="border-bottom:1px solid #111;padding:8px">${b.name} (${b.eventDate} ${b.eventTime}) — ${b.status}</div>`).join('');
+    return;
+  }
+
+  if(state.view === 'book'){
+    el.innerHTML = `
+      <div class="card">
+        <h3>Book Pranar Daak</h3>
+        <form id="bookForm">
+          <label>Full name *</label><input id="b_name" required>
+          <label>Phone *</label><input id="b_phone" required>
+          <label>Email (optional)</label><input id="b_email">
+          <label>Event Date (DD/MM/YYYY) *</label><input id="b_date" placeholder="DD/MM/YYYY" required>
+          <label>Event Time (e.g. 07:30 PM) *</label><input id="b_time" placeholder="07:30 PM" required>
+          <label>Address (or leave empty to use Landmark)</label><input id="b_addr">
+          <label>Landmark (optional)</label><input id="b_land">
+          <div class="note">Enter exact date and time. Travel cost will be added after admin checks location.</div>
+          <div style="margin-top:10px">
+            <strong>Choose performers</strong>
+            <div id="performersList" style="margin-top:8px"></div>
+          </div>
+          <div style="margin-top:10px" id="subtotalBox">Subtotal: 0</div>
+          <div style="margin-top:12px"><button class="btn" type="submit">Confirm Booking</button></div>
+        </form>
+      </div>
+    `;
+    const perf = document.getElementById('performersList');
+    if(members.length===0) perf.innerHTML = '<div class="muted">No performers available.</div>';
+    else perf.innerHTML = members.map(m => `<label style="display:block;padding:6px;border:1px solid #111;margin-bottom:6px"><input type="checkbox" data-id="${m.id}"> <strong>${m.name}</strong> (${m.role}) — Fee: ${m.fee||0}</label>`).join('');
+    const subtotalBox = document.getElementById('subtotalBox');
+    document.getElementById('bookForm').addEventListener('submit', e=>{
+      e.preventDefault();
+      const name = document.getElementById('b_name').value.trim();
+      const phone = document.getElementById('b_phone').value.trim();
+      const date = document.getElementById('b_date').value.trim();
+      const time = document.getElementById('b_time').value.trim();
+      if(!name||!phone||!date||!time){alert('Name, phone, date and time required'); return;}
+      const checked = Array.from(document.querySelectorAll('#performersList input[type=checkbox]')).filter(c=>c.checked).map(c=>c.getAttribute('data-id'));
+      if(checked.length===0){alert('Select at least one performer'); return;}
+      // compute subtotal
+      const selected = checked.map(id=>members.find(m=>m.id===id)).filter(Boolean);
+      const subtotal = selected.reduce((s,m)=>s + Number(m.fee||0),0);
+      const site = read(LS_SITE);
+      const depositOn = site.depositDefaultOn;
+      const depositPercent = site.depositPercent;
+      // deposit due date: midpoint between now and event date
+      const evParts = date.split('/');
+      const evDate = new Date(evParts[2], evParts[1]-1, evParts[0]);
+      const now = new Date();
+      let depositAmount = 0, depositDueAt = null;
+      if(depositOn){
+        const ms = evDate - now;
+        const days = Math.max(0, Math.ceil(ms/(1000*60*60*24)));
+        const mid = Math.floor(days/2) || 1;
+        depositAmount = Math.round((subtotal*depositPercent)/100);
+        depositDueAt = new Date(now.getTime() + mid*24*60*60*1000).toISOString();
+      }
+      const b = {id:uid(), createdAt:new Date().toISOString(), name, phone, email:document.getElementById('b_email').value.trim(), eventDate:date, eventTime:time, address:document.getElementById('b_addr').value.trim(), landmark:document.getElementById('b_land').value.trim(), selectedMemberIds:checked, subtotal, travelFee:0, total:subtotal, status:'confirmed', depositRequired:depositOn, depositPercent, depositDueAt, depositAmount, payments:[]}
+      const bs = read(LS_BOOKINGS) || [];
+      bs.unshift(b);
+      write(LS_BOOKINGS,bs);
+      // mark selected members as unavailable on that date
+      const ms = members.map(m=>{
+        if(b.selectedMemberIds.includes(m.id)){
+          const avr = m.availableDates||[];
+          return {...m, availableDates: (avr.includes(b.eventDate)? avr: [...avr, b.eventDate])}
+        }
+        return m;
+      })
+      write(LS_MEMBERS, ms);
+      alert('Booking created — ID: ' + b.id + '. You will receive confirmation via site notifications.');
+      // notification simulation: we add to local notification log
+      pushNotif(`Booking ${b.id} created for ${b.name} on ${b.eventDate}`);
+      // prefill admin email content via mailto link (user can click from Admin panel)
+      show('home');
+      render();
+    })
+    // subtotal update
+    document.querySelectorAll('#performersList input[type=checkbox]').forEach(ch=>ch.addEventListener('change', ()=> {
+      const checked = Array.from(document.querySelectorAll('#performersList input[type=checkbox]')).filter(c=>c.checked).map(c=>c.getAttribute('data-id'));
+      const sum = checked.map(id=>members.find(m=>m.id===id)?.fee||0).reduce((s,a)=>s+a,0);
+      subtotalBox.innerHTML = 'Subtotal: ' + sum;
+    }));
+    return;
+  }
+
+  if(state.view === 'gallery'){
+    const gallery = read(LS_GALLERY) || [];
+    el.innerHTML = `
+      <div class="card">
+        <h3>Gallery — Photos & Videos</h3>
+        <div class="muted">Members can upload photos/videos from their panel. Admin can upload here too.</div>
+        <div style="margin-top:10px">
+          <input type="file" id="g_file" accept="image/*,video/*">
+          <button class="btn" id="g_upload">Upload</button>
+        </div>
+        <div id="galleryList" style="margin-top:12px"></div>
+      </div>
+    `;
+    document.getElementById('g_upload').addEventListener('click', ()=>{
+      const f = document.getElementById('g_file').files[0];
+      if(!f) return alert('Choose file');
+      const r = new FileReader();
+      r.onload = ()=> {
+        const gallery = read(LS_GALLERY)||[];
+        gallery.unshift({id:uid(), type: f.type.startsWith('image') ? 'image':'video', data: r.result, uploadedAt: new Date().toISOString()});
+        write(LS_GALLERY,gallery);
+        alert('Uploaded to gallery (local)');
+        render();
+      }
+      r.readAsDataURL(f);
+    })
+    const list = document.getElementById('galleryList');
+    if(gallery.length===0) list.innerHTML = '<div class="muted">No items yet.</div>';
+    else list.innerHTML = gallery.map(g=> g.type==='image'? `<div style="margin-bottom:8px"><img src="${g.data}" style="max-width:100%;border-radius:6px"></div>`: `<div style="margin-bottom:8px"><video src="${g.data}" controls style="max-width:100%;border-radius:6px"></video></div>`).join('');
+    return;
+  }
+
+  if(state.view === 'memberLogin'){
+    el.innerHTML = `
+      <div class="card">
+        <h3>Member Login</h3>
+        <div class="muted">Enter your 4-6 digit personal code</div>
+        <input id="m_code" placeholder="e.g. 3926">
+        <div style="margin-top:8px"><button class="btn" id="m_login">Login</button></div>
+        <div class="muted small" style="margin-top:10px">If your code not found contact admin.</div>
+      </div>
+    `;
+    document.getElementById('m_login').addEventListener('click', ()=>{
+      const code = document.getElementById('m_code').value.trim();
+      const members = read(LS_MEMBERS)||[];
+      const m = members.find(x=>x.code===code);
+      if(!m){alert('Invalid code'); return;}
+      state.memberSession = m.id;
+      alert('Welcome ' + m.name);
+      show('member');
+    })
+    return;
+  }
+
+  if(state.view === 'member'){
+    const m = (read(LS_MEMBERS)||[]).find(x=>x.id===state.memberSession);
+    if(!m){alert('Session lost'); state.memberSession=null; show('memberLogin'); return;}
+    el.innerHTML = `
+      <div class="card">
+        <h3>Member Panel — ${m.name}</h3>
+        <div style="display:flex;gap:12px">
+          <div style="flex:1">
+            <div><img src="${m.photo||''}" style="max-width:140px;display:${m.photo? 'block':'none'}"></div>
+            <div class="muted">Role: ${m.role}</div>
+            <div class="muted">Code: ${m.code}</div>
+            <div style="margin-top:8px">
+              <input type="file" id="m_photo">
+              <button class="btn" id="m_up">Upload Photo</button>
+              <button class="btn" id="m_clear">Remove Photo</button>
+            </div>
+            <div style="margin-top:10px">
+              <strong>Availability (DD/MM/YYYY)</strong>
+              <input id="availDate" placeholder="DD/MM/YYYY">
+              <button class="btn" id="toggleDate">Toggle</button>
+              <div class="muted">Your current available dates: <span id="myAvail">${(m.availableDates||[]).join(', ')||'All'}</span></div>
+            </div>
+          </div>
+          <div style="width:360px">
+            <h4>Your bookings</h4>
+            <div id="myBookings"></div>
+            <div style="margin-top:12px">
+              <button class="btn" id="m_logout">Logout</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+    document.getElementById('m_up').addEventListener('click', ()=>{
+      const f = document.getElementById('m_photo').files[0]; if(!f) return alert('Choose image');
+      const r = new FileReader(); r.onload = ()=> {
+        const mem = read(LS_MEMBERS)||[]; const next = mem.map(x=> x.id===m.id? {...x,photo:r.result}:x); write(LS_MEMBERS,next); alert('Photo uploaded'); render();
+      }; r.readAsDataURL(f);
+    });
+    document.getElementById('m_clear').addEventListener('click', ()=> {
+      const mem = read(LS_MEMBERS)||[]; const next = mem.map(x=> x.id===m.id? {...x,photo:null}:x); write(LS_MEMBERS,next); alert('Photo removed'); render();
+    });
+    document.getElementById('toggleDate').addEventListener('click', ()=> {
+      const d = document.getElementById('availDate').value.trim(); if(!d) return alert('Enter DD/MM/YYYY');
+      const mem = read(LS_MEMBERS)||[]; const next = mem.map(x=> {
+        if(x.id!==m.id) return x;
+        const set = new Set(x.availableDates||[]);
+        if(set.has(d)) set.delete(d); else set.add(d);
+        return {...x, availableDates:Array.from(set)}
+      }); write(LS_MEMBERS,next); alert('Toggled date'); render();
+    });
+    document.getElementById('m_logout').addEventListener('click', ()=> { state.memberSession=null; show('home');});
+    const myBs = (read(LS_BOOKINGS)||[]).filter(b=> b.selectedMemberIds.includes(m.id));
+    const mb = document.getElementById('myBookings');
+    if(myBs.length===0) mb.innerHTML = '<div class="muted">No bookings</div>'; else mb.innerHTML = myBs.map(b=> `<div style="border-bottom:1px solid #111;padding:8px"><strong>${b.eventDate}</strong> ${b.eventTime}<div>${b.name}</div><div>Status: ${b.status}</div><div><button onclick="memberCancel('${b.id}','${m.id}')">Cancel participation</button></div></div>`).join('');
+    return;
+  }
+
+  if(state.view === 'adminLogin'){
+    el.innerHTML = `
+      <div class="card">
+        <h3>Owner / Admin Login</h3>
+        <div class="muted">Enter admin passcode</div>
+        <input id="a_pass" placeholder="passcode">
+        <div style="margin-top:8px"><button class="btn" id="a_login">Login</button></div>
+      </div>
+    `;
+    document.getElementById('a_login').addEventListener('click', ()=> {
+      const pass = document.getElementById('a_pass').value.trim();
+      const cfg = read(LS_ADMIN)||{pass:'3926'};
+      if(pass === cfg.pass){ state.adminSession = true; show('admin'); } else alert('Wrong passcode');
+    })
+    return;
+  }
+
+  if(state.view === 'admin'){
+    const members = read(LS_MEMBERS)||[]; const bookings = read(LS_BOOKINGS)||[];
+    el.innerHTML = `
+      <div>
+        <div class="flex">
+          <button class="btn" onclick="adminLogout()">Logout</button>
+          <div class="badge">Admin Panel</div>
+        </div>
+        <div style="display:grid;grid-template-columns:2fr 1fr;gap:12px;margin-top:12px">
+          <div>
+            <div class="card">
+              <h3>Site Settings</h3>
+              <label>Site name</label><input id="s_name" value="${site.name}">
+              <label>Description</label><input id="s_desc" value="${site.description}">
+              <label>Admin email</label><input id="s_email" value="${site.adminEmail}">
+              <label><input type="checkbox" id="s_deposit" ${site.depositDefaultOn? 'checked':''}> Default require deposit</label>
+              <label>Deposit percent</label><input id="s_percent" value="${site.depositPercent||50}">
+              <div style="margin-top:8px"><button class="btn" id="saveSite">Save Site</button></div>
+            </div>
+
+            <div class="card" style="margin-top:12px">
+              <h3>Members</h3>
+              <div style="margin-bottom:8px">
+                <input id="m_name" placeholder="Full name">
+                <input id="m_role" placeholder="Role (Singer/Instrument)">
+                <input id="m_phone" placeholder="Phone">
+                <input id="m_email" placeholder="Email">
