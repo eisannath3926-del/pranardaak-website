@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pranar Daak Admin Panel</title>
+  <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #111;
+      color: white;
+      padding: 20px;
+      text-align: center;
+    }
+    .container {
+      max-width: 600px;
+      margin: auto;
+      background: #222;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 0 10px #444;
+    }
+    input {
+      width: 90%;
+      padding: 10px;
+      margin: 5px;
+      border-radius: 5px;
+      border: none;
+    }
+    button {
+      background-color: #28a745;
+      border: none;
+      color: white;
+      padding: 10px 20px;
+      margin: 10px;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #218838;
+    }
+    .member-card {
+      background: #333;
+      padding: 10px;
+      border-radius: 5px;
+      margin-top: 10px;
+    }
+    img {
+      max-width: 80px;
+      border-radius: 10px;
+    }
+  </style>
+</head>
+<body>
+  <h1>🎸 Pranar Daak Admin Panel</h1>
+
+  <div class="container" id="loginDiv">
+    <h3>Admin Login</h3>
+    <input type="email" id="email" placeholder="Email"><br>
+    <input type="password" id="password" placeholder="Password"><br>
+    <button onclick="login()">Login</button>
+  </div>
+
+  <div class="container" id="adminDiv" style="display:none;">
+    <h3>Add New Member</h3>
+    <input type="text" id="memberName" placeholder="Member Name"><br>
+    <input type="text" id="memberInstrument" placeholder="Instrument"><br>
+    <input type="text" id="memberFee" placeholder="Fee"><br>
+    <input type="text" id="memberPhoto" placeholder="Photo URL"><br>
+    <button onclick="addMember()">➕ Add Member</button>
+    <button onclick="logout()" style="background-color:#dc3545;">Logout</button>
+
+    <h3>Current Members</h3>
+    <div id="memberList"></div>
+  </div>
+
+  <script>
+    // 🔥 তোমার Firebase config এখানে বসাও
+    const firebaseConfig = {
+      apiKey: "YOUR_API_KEY",
+      authDomain: "YOUR_AUTH_DOMAIN",
+      projectId: "YOUR_PROJECT_ID",
+      storageBucket: "YOUR_STORAGE_BUCKET",
+      messagingSenderId: "YOUR_MSG_SENDER_ID",
+      appId: "YOUR_APP_ID"
+    };
+
+    // Initialize Firebase
+    const app = firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+    const auth = firebase.auth();
+
+    // Login
+    function login() {
+      const email = document.getElementById("email").value;
+      const password = document.getElementById("password").value;
+      auth.signInWithEmailAndPassword(email, password)
+      .then(() => {
+        document.getElementById("loginDiv").style.display = "none";
+        document.getElementById("adminDiv").style.display = "block";
+        loadMembers();
+      })
+      .catch((error) => alert(error.message));
+    }
+
+    // Logout
+    function logout() {
+      auth.signOut();
+      document.getElementById("loginDiv").style.display = "block";
+      document.getElementById("adminDiv").style.display = "none";
+    }
+
+    // Add Member
+    function addMember() {
+      const name = document.getElementById("memberName").value;
+      const instrument = document.getElementById("memberInstrument").value;
+      const fee = document.getElementById("memberFee").value;
+      const photo = document.getElementById("memberPhoto").value;
+
+      db.collection("Members").add({
+        name, instrument, fee, photo
+      })
+      .then(() => {
+        alert("✅ Member added!");
+        document.getElementById("memberName").value = "";
+        document.getElementById("memberInstrument").value = "";
+        document.getElementById("memberFee").value = "";
+        document.getElementById("memberPhoto").value = "";
+        loadMembers();
+      })
+      .catch(err => alert(err.message));
+    }
+
+    // Load Members
+    function loadMembers() {
+      const list = document.getElementById("memberList");
+      list.innerHTML = "";
+      db.collection("Members").get().then(snapshot => {
+        snapshot.forEach(doc => {
+          const data = doc.data();
+          list.innerHTML += `
+            <div class='member-card'>
+              <img src='${data.photo}' alt='photo'><br>
+              <b>${data.name}</b><br>
+              ${data.instrument} — ₹${data.fee}<br>
+              <button onclick="deleteMember('${doc.id}')">🗑️ Delete</button>
+            </div>
+          `;
+        });
+      });
+    }
+
+    // Delete Member
+    function deleteMember(id) {
+      db.collection("Members").doc(id).delete().then(() => {
+        alert("❌ Member deleted");
+        loadMembers();
+      });
+    }
+  </script>
+</body>
+</html>
